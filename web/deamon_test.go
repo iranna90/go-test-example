@@ -6,18 +6,37 @@ import (
 	"net/http"
 	"io"
 	"strings"
+	"io/ioutil"
+	"fmt"
 )
 
 var str = "from string reader"
 
 func TestRestCall(t *testing.T) {
-	server := httptest.NewServer(nil)
+	server := httptest.NewServer(mux())
 	defer server.Close()
-	http.Head(server.URL)
-}
+	// provide reader for string
+	reader = stringReader
 
-func HandleTest(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hello"))
+	response, err := http.Head(server.URL + "/root")
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println("status ", response.StatusCode)
+	bytes, err := ioutil.ReadAll(response.Body)
+	fmt.Println("response length ", len(bytes))
+	fmt.Println("response ", string(bytes))
+
+	// provide reader for string
+	reader = filReader
+	response, err = http.Get(server.URL + "/root")
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println("status ", response.StatusCode)
+	bytes, err = ioutil.ReadAll(response.Body)
+	fmt.Println("response length ", len(bytes))
+	fmt.Println("response ", string(bytes))
 }
 
 func TestRecordedOutPut(t *testing.T) {
@@ -30,7 +49,7 @@ func TestRecordedOutPut(t *testing.T) {
 	// default data is from file
 	fileData := "hello welcome to go lang"
 	if responseData != fileData {
-		t.Errorf("Data did not read is %s and expected from file is %s", fileData, responseData)
+		t.Errorf("Data retrieved is \"%s\" and expected from file is \"%s\"", fileData, responseData)
 	}
 
 	// provide reader for string
@@ -39,7 +58,7 @@ func TestRecordedOutPut(t *testing.T) {
 	Handler(writer, request)
 	responseData = writer.Body.String()
 	if responseData != str {
-		t.Errorf("Data retrived is %s and data from string reader %s", responseData, str)
+		t.Errorf("Data retrived is \"%s\" and data from string reader \"%s\"", responseData, str)
 	}
 }
 
